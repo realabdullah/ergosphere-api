@@ -1,10 +1,9 @@
-import { MongoClient } from 'mongodb';
+import mongoose from 'mongoose';
 
-const url = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const client = new MongoClient(url);
+mongoose.connect('mongodb://localhost:27017/ergosphere').then(() => {
+  console.log('MongoDB connected');
+}).catch((err) => {
+  console.log('MongoDB connection error', err);
+});
 
-client.connect()
-.then((result) => console.log("Connected successfully to database"))
-.catch((err) => console.log("Error connecting to database"));
-
-export default client;
+export default mongoose;
