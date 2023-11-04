@@ -1,3 +1,4 @@
+/* eslint-disable no-invalid-this */
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -35,12 +36,14 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    tokens: [{
-       token: {
-           type: String,
-           required: true,
-       },
-    }],
+    tokens: [
+        {
+            token: {
+                type: String,
+                required: true,
+            },
+        },
+    ],
     resetPasswordToken: String,
     resetPasswordExpires: Date,
 });
@@ -63,15 +66,20 @@ UserSchema.pre('save', async function(next) {
     }
 
     if (this.isNew) {
-        // Check if user with same email already exists
-        const existingUser = await this.constructor.findOne({ email: this.email });
+    // Check if user with same email already exists
+        const existingUser = await this.constructor.findOne({
+            email: this.email,
+        });
         if (existingUser) {
             throw new Error('An account with this email already exists');
         }
 
         // Get initials from user's name
         const name = `${this.firstName} ${this.lastName}`;
-        const initials = name.split(' ').map(n => n[0]).join('');
+        const initials = name
+            .split(' ')
+            .map((n) => n[0])
+            .join('');
 
         // Generate user avatar using useravatar URL
         const avatarUrl = `https://ui-avatars.com/api/?name=${initials}&background=random&color=fff`;
@@ -82,7 +90,7 @@ UserSchema.pre('save', async function(next) {
         // Generate username from email
         const email = this.email;
         const username = email.split('@')[0];
-        const userCount = await this.constructor.countDocuments({ username });
+        const userCount = await this.constructor.countDocuments({username});
         if (userCount > 0) {
             this.username = `${username}${userCount + 1}`;
         } else {
@@ -93,10 +101,9 @@ UserSchema.pre('save', async function(next) {
     next();
 });
 
-
 // Find user by email and password
 UserSchema.statics.findByCredentials = async function(email, password) {
-    const user = await this.findOne({ email });
+    const user = await this.findOne({email});
     if (!user) {
         throw new Error('Invalid email or password');
     }
@@ -109,20 +116,27 @@ UserSchema.statics.findByCredentials = async function(email, password) {
 
 // Generate access token
 UserSchema.methods.generateAccessToken = async function() {
-    const token = jwt.sign({ id: this._id }, ACCESS_TOKEN.secret, { expiresIn: ACCESS_TOKEN.expiry });
+    const token = jwt.sign({id: this._id}, ACCESS_TOKEN.secret, {
+        expiresIn: ACCESS_TOKEN.expiry,
+    });
     return token;
 };
 
 // Generate refresh token
 UserSchema.methods.generateRefreshToken = async function() {
     const user = this;
-    const token = jwt.sign({ id: this._id }, REFRESH_TOKEN.secret, { expiresIn: REFRESH_TOKEN.expiry });
+    const token = jwt.sign({id: this._id}, REFRESH_TOKEN.secret, {
+        expiresIn: REFRESH_TOKEN.expiry,
+    });
 
-    const refreshTokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    user.tokens.push({ token: refreshTokenHash });
+    const refreshTokenHash = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+    user.tokens.push({token: refreshTokenHash});
     await user.save();
     return token;
-}
+};
 
 // Generate reset password token
 UserSchema.methods.generateResetPasswordToken = async function() {
@@ -131,15 +145,19 @@ UserSchema.methods.generateResetPasswordToken = async function() {
     const user = this;
 
     const resetToken = `${token}.${secret}`;
-    const resetTokenHash = crypto.createHmac('sha256', secret).update(token).digest('hex');
+    const resetTokenHash = crypto
+        .createHmac('sha256', secret)
+        .update(token)
+        .digest('hex');
 
     user.resetPasswordToken = resetTokenHash;
-    user.resetPasswordExpires = Date.now() + (RESET_PASSWORD_TOKEN.expiry * 60 * 1000);
+    user.resetPasswordExpires =
+    Date.now() + RESET_PASSWORD_TOKEN.expiry * 60 * 1000;
 
     await user.save();
 
     return resetToken;
-}
+};
 
 const User = mongoose.model('User', UserSchema);
 
