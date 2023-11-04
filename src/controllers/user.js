@@ -53,6 +53,18 @@ export const login = async (req, res) => {
     }
 };
 
+export const logout = async (req, res) => {
+    try {
+        const user = req.user;
+        user.token = '';
+        await user.save();
+        res.json({success: true});
+    } catch (error) {
+        res.status(500).json({error: error.message});
+    }
+};
+
+
 export const refresh = async (req, res) => {
     try {
         const {token} = req.body;
@@ -61,7 +73,7 @@ export const refresh = async (req, res) => {
         if (!token || !header) {
             return res.status(401).json({error: '1You are not authorized'});
         }
-        console.log('header', header);
+
         const accessToken = header.split(' ')[1];
 
         const expiredAccessToken = jwt.verify(
