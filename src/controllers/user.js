@@ -1,16 +1,7 @@
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import User from '../models/user.js';
 
-const REFRESH_TOKEN = {
-    secret: process.env.REFRESH_TOKEN_SECRET,
-    cookie: {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    },
-};
-
-// Create a new user
 export const register = async (req, res) => {
     try {
         if (!req.body.name || !req.body.email || !req.body.password) {
@@ -22,15 +13,16 @@ export const register = async (req, res) => {
 
         const user = new User({firstName, lastName, email, password});
         const savedUser = await user.save();
-        const accessToken = await user.generateAccessToken();
+        const access = await user.generateAccessToken();
+        const refresh = await user.generateRefreshToken();
 
-        res.cookie(
-            'refreshToken',
-            await user.generateRefreshToken(),
-            REFRESH_TOKEN.cookie,
-        );
-
-        res.status(201).json({success: true, user: savedUser, accessToken});
+        res.status(201).json({success: true, user: savedUser, accessToken: {
+            token: access,
+            expires: new Date(Date.now() + 60 * 60 * 1000),
+        }, refreshToken: {
+            token: refresh,
+            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        }});
     } catch (error) {
         if (error.name === 'ValidationError') {
             const errors = Object.values(error.errors).map((err) => {
@@ -42,26 +34,79 @@ export const register = async (req, res) => {
     }
 };
 
-// Login a user
 export const login = async (req, res) => {
     try {
         const {email, password} = req.body;
         const user = await User.findByCredentials(email, password);
-        const accessToken = await user.generateAccessToken();
+        const access = await user.generateAccessToken();
+        const refresh = await user.generateRefreshToken();
 
-        res.cookie(
-            'refreshToken',
-            await user.generateRefreshToken(),
-            REFRESH_TOKEN.cookie,
-        );
-
-        res.json({success: true, user, accessToken});
+        res.json({success: true, user, accessToken: {
+            token: access,
+            expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        }, refreshToken: {
+            token: refresh,
+            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        }});
     } catch (error) {
         res.status(500).json({error: error.message});
     }
 };
 
-// Get a user by ID
+export const refresh = async (req, res) => {
+    try {
+        const {token} = req.body;
+        const header = req.header('Authorization');
+
+        if (!token || !header) {
+            return res.status(401).json({error: '1You are not authorized'});
+        }
+        console.log('header', header);
+        const accessToken = header.split(' ')[1];
+
+        const expiredAccessToken = jwt.verify(
+            accessToken,
+            process.env.ACCESS_TOKEN_SECRET,
+            {ignoreExpiration: true},
+        );
+        const expiredTokenHash = crypto
+            .createHash('sha256')
+            .update(accessToken)
+            .digest('hex');
+
+        const decodedRefreshToken = jwt.verify(
+            token, process.env.REFRESH_TOKEN_SECRET,
+        );
+
+        if (expiredAccessToken.id !== decodedRefreshToken.id) {
+            return res.status(401).json({error: '2You are not authorized'});
+        }
+
+        const user = await User.findOne({_id: decodedRefreshToken.id});
+
+        if (!user) {
+            return res.status(401).json({error: '3You are not authorized'});
+        }
+
+        if (user.token !== expiredTokenHash) {
+            return res.status(401).json({error: '4You are not authorized'});
+        }
+
+        const access = await user.generateAccessToken();
+        const refresh = await user.generateRefreshToken();
+
+        res.json({success: true, accessToken: {
+            token: access,
+            expires: new Date(Date.now() + 60 * 60 * 1000),
+        }, refreshToken: {
+            token: refresh,
+            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        }});
+    } catch (error) {
+        res.status(500).json({error: error.message});
+    }
+};
+
 export const getUser = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);

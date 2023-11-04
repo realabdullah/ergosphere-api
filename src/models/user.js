@@ -36,14 +36,7 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    tokens: [
-        {
-            token: {
-                type: String,
-                required: true,
-            },
-        },
-    ],
+    token: String,
     resetPasswordToken: String,
     resetPasswordExpires: Date,
 });
@@ -52,7 +45,7 @@ const UserSchema = new mongoose.Schema({
 UserSchema.set('toJSON', {
     transform: function(doc, ret, options) {
         delete ret.password;
-        delete ret.tokens;
+        delete ret.token;
         delete ret.__v;
         return ret;
     },
@@ -66,7 +59,6 @@ UserSchema.pre('save', async function(next) {
     }
 
     if (this.isNew) {
-    // Check if user with same email already exists
         const existingUser = await this.constructor.findOne({
             email: this.email,
         });
@@ -74,20 +66,15 @@ UserSchema.pre('save', async function(next) {
             throw new Error('An account with this email already exists');
         }
 
-        // Get initials from user's name
         const name = `${this.firstName} ${this.lastName}`;
         const initials = name
             .split(' ')
             .map((n) => n[0])
             .join('');
 
-        // Generate user avatar using useravatar URL
         const avatarUrl = `https://ui-avatars.com/api/?name=${initials}&background=random&color=fff`;
-
-        // Set profile picture to generated avatar URL
         this.profile_picture = avatarUrl;
 
-        // Generate username from email
         const email = this.email;
         const username = email.split('@')[0];
         const userCount = await this.constructor.countDocuments({username});
@@ -101,7 +88,6 @@ UserSchema.pre('save', async function(next) {
     next();
 });
 
-// Find user by email and password
 UserSchema.statics.findByCredentials = async function(email, password) {
     const user = await this.findOne({email});
     if (!user) {
@@ -114,31 +100,28 @@ UserSchema.statics.findByCredentials = async function(email, password) {
     return user;
 };
 
-// Generate access token
 UserSchema.methods.generateAccessToken = async function() {
+    const user = this;
     const token = jwt.sign({id: this._id}, ACCESS_TOKEN.secret, {
         expiresIn: ACCESS_TOKEN.expiry,
     });
-    return token;
-};
 
-// Generate refresh token
-UserSchema.methods.generateRefreshToken = async function() {
-    const user = this;
-    const token = jwt.sign({id: this._id}, REFRESH_TOKEN.secret, {
-        expiresIn: REFRESH_TOKEN.expiry,
-    });
-
-    const refreshTokenHash = crypto
+    const accessTokenHash = crypto
         .createHash('sha256')
         .update(token)
         .digest('hex');
-    user.tokens.push({token: refreshTokenHash});
+    user.token = accessTokenHash;
     await user.save();
     return token;
 };
 
-// Generate reset password token
+UserSchema.methods.generateRefreshToken = async function() {
+    const token = jwt.sign({id: this._id}, REFRESH_TOKEN.secret, {
+        expiresIn: REFRESH_TOKEN.expiry,
+    });
+    return token;
+};
+
 UserSchema.methods.generateResetPasswordToken = async function() {
     const token = crypto.randomBytes(20).toString('base64url');
     const secret = crypto.randomBytes(10).toString('hex');
