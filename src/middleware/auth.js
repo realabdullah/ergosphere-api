@@ -1,5 +1,6 @@
 
-import { verify } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+import 'dotenv/config';
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -9,7 +10,7 @@ function authMiddleware(req, res, next) {
 
   const token = authHeader.split(' ')[1];
   try {
-    const decodedToken = verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     req.user = decodedToken;
     next();
   } catch (err) {
