@@ -2,7 +2,7 @@
 
 import jwt from 'jsonwebtoken';
 import 'dotenv/config';
-import User from '../models/user.js';
+import User from '../models/userModel.js';
 import crypto from 'crypto';
 
 async function authMiddleware(req, res, next) {
