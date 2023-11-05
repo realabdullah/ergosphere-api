@@ -41,7 +41,6 @@ const UserSchema = new mongoose.Schema({
     resetPasswordExpires: Date,
 });
 
-// SET SCHEMA OPTION
 UserSchema.set('toJSON', {
     transform: function(doc, ret, options) {
         delete ret.password;
@@ -51,7 +50,6 @@ UserSchema.set('toJSON', {
     },
 });
 
-// perform actions before saving the user
 UserSchema.pre('save', async function(next) {
     if (this.isModified('password')) {
         const saltRounds = 10;

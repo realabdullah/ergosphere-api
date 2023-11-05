@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/userModel.js';
+import {createWorkspace} from './workspaceController.js';
+
 
 export const register = async (req, res) => {
     try {
@@ -15,6 +17,15 @@ export const register = async (req, res) => {
         const savedUser = await user.save();
         const access = await user.generateAccessToken();
         const refresh = await user.generateRefreshToken();
+        // Create a workspace for the user
+        const workspacePayload = {
+            title: `${firstName}'s Workspace`,
+            description: `This is ${firstName}'s workspace`,
+            slug: `${firstName.toLowerCase()}workspace`,
+            user: savedUser._id,
+        };
+        const workspace = await createWorkspace(workspacePayload, 'new-user');
+        savedUser.workspace = workspace._id;
 
         res.status(201).json({success: true, user: savedUser, accessToken: {
             token: access,
