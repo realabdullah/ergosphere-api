@@ -29,7 +29,7 @@ const workspaceSchema = new Schema({
 workspaceSchema.set('toJSON', {
     transform: (doc, ret, options) => {
         delete ret.__v;
-        ret.owner = `${ret.user.firstName} ${ret.user.lastName}`;
+        ret.owner = `${ret?.user?.firstName} ${ret?.user?.lastName}`;
         delete ret.user;
         delete ret._id;
         return ret;
