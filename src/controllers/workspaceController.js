@@ -4,7 +4,9 @@ import Workspace from '../models/workspaceModel.js';
 
 export const getWorkspaces = async (req, res) => {
     try {
-        const workspaces = await Workspace.find({user: req.user._id}).populate('user', 'firstName lastName');
+        const workspaces = await Workspace.find({user: req.user._id})
+            .populate('user', 'firstName lastName')
+            .populate('team', 'firstName lastName username profile_picture email');
         res.send({success: true, workspaces});
     } catch (error) {
         res.status(500).json({error: error.message, success: false});
@@ -16,7 +18,9 @@ export const getWorkspace = async (req, res) => {
         const workspace = await Workspace.findOne({
             user: req.user._id,
             slug: req.params.slug,
-        }).populate('user', 'firstName lastName');
+        })
+            .populate('user', 'firstName lastName')
+            .populate('team', 'firstName lastName username profile_picture email');
         if (!workspace) {
             return res.status(404).json({error: 'Workspace not found', success: false});
         }
@@ -32,7 +36,9 @@ export const updateWorkspace = async (req, res) => {
         const workspace = await Workspace.findOneAndUpdate({
             user: req.user._id,
             slug: req.params.slug,
-        }, payload, {new: true}).populate('user', 'firstName lastName');
+        }, payload, {new: true})
+            .populate('user', 'firstName lastName')
+            .populate('team', 'firstName lastName username profile_picture email');
         if (!workspace) {
             return res.status(404).json({error: 'Workspace not found', success: false});
         }
@@ -59,8 +65,11 @@ export const deleteWorkspace = async (req, res) => {
 
 export const addNewWorkspace = async (req, res) => {
     try {
-        const workspace = await createWorkspace({...req.body, user: req.user._id});
-        res.status(201).json({success: true, workspace});
+        const workspace = (await createWorkspace({...req.body, user: req.user._id}));
+        const populatedWorkspace = await Workspace.findOne({_id: workspace._id})
+            .populate('user', 'firstName lastName')
+            .populate('team', 'firstName lastName username profile_picture email');
+        res.json({success: true, workspace: populatedWorkspace});
     } catch (error) {
         res.status(500).json({error: error.message, success: false});
     }

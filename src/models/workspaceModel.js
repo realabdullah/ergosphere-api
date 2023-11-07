@@ -24,12 +24,22 @@ const workspaceSchema = new Schema({
         ref: 'User',
         required: true,
     },
+    team: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    }],
 });
 
 workspaceSchema.set('toJSON', {
     transform: (doc, ret, options) => {
         delete ret.__v;
         ret.owner = `${ret?.user?.firstName} ${ret?.user?.lastName}`;
+        ret.team = ret?.team?.map((member) => ({
+            name: `${member.firstName} ${member.lastName}`,
+            username: member.username,
+            profile_picture: member.profile_picture,
+            email: member.email,
+        }));
         delete ret.user;
         delete ret._id;
         return ret;
@@ -44,6 +54,7 @@ workspaceSchema.pre('save', async function(next) {
 
     const avatarUrl = `https://ui-avatars.com/api/?name=${initials}&background=random&color=fff`;
     this.avatar = avatarUrl;
+    this.team.push(this.user._id);
 
     next();
 });

@@ -1,3 +1,4 @@
+/* eslint-disable no-invalid-this */
 import {Schema, model} from 'mongoose';
 
 const taskSchema = new Schema({
@@ -11,8 +12,8 @@ const taskSchema = new Schema({
     },
     priority: {
         type: String,
-        enum: ['low', 'medium', 'high'],
-        default: 'medium',
+        enum: ['Low', 'Medium', 'High'],
+        default: 'Medium',
     },
     dueDate: {
         type: Date,
@@ -37,14 +38,13 @@ const taskSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
     }],
+    createdAt: Date,
 });
 
 taskSchema.set('toJSON', {
     transform: function(doc, ret, options) {
         delete ret.__v;
-        ret.assignees = ret.assignees.map((assignee) => ({
-            username: assignee.username,
-        }));
+        ret.assignees = ret.assignees.map((assignee) => (assignee.username));
         ret.workspace = ret.workspace.slug;
         ret.user = {
             username: ret.user.username,
@@ -52,6 +52,14 @@ taskSchema.set('toJSON', {
         };
         return ret;
     },
+});
+
+taskSchema.pre('save', async function(next) {
+    if (this.isNew) {
+        this.createdAt = new Date();
+    }
+
+    next();
 });
 
 const Task = model('Task', taskSchema);
