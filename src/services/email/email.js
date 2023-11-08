@@ -1,36 +1,22 @@
 /* eslint-disable require-jsdoc */
-import mailjet from 'node-mailjet';
+import nodemailer from 'nodemailer';
 import 'dotenv/config';
 
-const mailjetClient = mailjet.Client.apiConnect(
-    process.env.MJ_APIKEY_PUBLIC,
-    process.env.MJ_APIKEY_PRIVATE,
-);
-
-async function sendEmail(template, email, subjet) {
-    const request = mailjetClient.post('send', {version: 'v3.1'}).request({
-        Messages: [
-            {
-                From: {
-                    Email: process.env.MJ_SENDER_EMAIL,
-                    Name: process.env.MJ_SENDER_NAME,
-                },
-                To: [
-                    {
-                        Email: email,
-                    },
-                ],
-                Subject: subjet,
-                HTMLPart: template,
-            },
-        ],
-    });
-
+export const sendEmail = async ({to, subject, html}) => {
     try {
-        await request;
-    } catch (err) {
-        console.error('error', err.statusCode, err.message);
-    }
-}
+        const transporter = nodemailer.createTransport({
+            host: process.env.ELASTIC_EMAIL_SERVER,
+            port: process.env.ELASTIC_EMAIL_PORT,
+            auth: {
+                user: process.env.ELASTIC_EMAIL_USERNAME,
+                pass: process.env.ELASTIC_EMAIL_PASSWORD,
+            },
+        });
 
-export default sendEmail;
+        const info = await transporter.sendMail({from: process.env.ELASTIC_EMAIL_USERNAME, to, subject, html});
+
+        console.log('Message sent: %s', info);
+    } catch (error) {
+        console.error('Error: ', error);
+    }
+};
