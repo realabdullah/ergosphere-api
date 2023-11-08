@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/userModel.js';
 import {createWorkspace} from './workspaceController.js';
+import sendEmail from '../services/email/email.js';
+import {welcomeTemplate} from '../services/email/templates/welcome.js';
 
 
 export const register = async (req, res) => {
@@ -26,6 +28,10 @@ export const register = async (req, res) => {
         };
         const workspace = await createWorkspace(workspacePayload, 'new-user');
         savedUser.workspace = workspace._id;
+
+        // Send welcome email
+        const template = welcomeTemplate(name);
+        await sendEmail(template, email, 'Welcome to Ergosphere! 🎉');
 
         res.status(201).json({success: true, user: savedUser, accessToken: {
             token: access,
