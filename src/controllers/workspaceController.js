@@ -4,7 +4,7 @@ import Workspace from '../models/workspaceModel.js';
 
 export const getWorkspaces = async (req, res) => {
     try {
-        const workspaces = await Workspace.find({user: req.user._id})
+        const workspaces = await Workspace.find({team: req.user._id})
             .populate('user', 'firstName lastName')
             .populate('team', 'firstName lastName username profile_picture email');
         res.send({success: true, workspaces});

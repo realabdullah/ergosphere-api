@@ -47,23 +47,35 @@ workspaceSchema.set('toJSON', {
 });
 
 workspaceSchema.pre('save', async function(next) {
-    const initials = this.title
-        .split(' ')
-        .map((n) => n[0])
-        .join('');
+    if (this.isNew) {
+        const initials = this.title
+            .split(' ')
+            .map((n) => n[0])
+            .join('');
 
-    const avatarUrl = `https://ui-avatars.com/api/?name=${initials}&background=random&color=fff`;
-    this.avatar = avatarUrl;
-    this.team.push(this.user._id);
+        const avatarUrl = `https://ui-avatars.com/api/?name=${initials}&background=random&color=fff`;
+        this.avatar = avatarUrl;
+        this.team.push(this.user._id);
 
-    next();
+        next();
+    }
 });
 
 
 workspaceSchema.post('save', async function(doc) {
-    const workspaceTeam = new WorkspaceTeam({user: doc.user, workspace: doc._id});
-    await workspaceTeam.save();
+    if (this.isNew) {
+        const workspaceTeam = new WorkspaceTeam({user: doc.user, workspace: doc._id});
+        await workspaceTeam.save();
+    }
 });
+
+workspaceSchema.methods.addUser = async function(userId) {
+    this.team.push(userId);
+    await this.save();
+
+    const workspaceTeam = new WorkspaceTeam({user: userId, workspace: this._id});
+    await workspaceTeam.save();
+};
 
 const Workspace = model('Workspace', workspaceSchema);
 
