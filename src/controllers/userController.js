@@ -150,3 +150,22 @@ export const getUser = async (req, res) => {
         res.status(500).json({error: 'User not found'});
     }
 };
+
+export const editUser = async (req, res) => {
+    try {
+        const user = await User.findOne({username: req.params.username});
+        if (!user) {
+            return res.status(404).json({error: 'User not found'});
+        }
+
+        const {name, password} = req.body;
+        if (password) user.password = password;
+        const [firstName, lastName] = name.split(' ');
+        user.firstName = firstName;
+        user.lastName = lastName;
+        await user.save();
+        res.json({success: true, user});
+    } catch (error) {
+        res.status(500).json({error: 'User not found', success: false});
+    }
+};

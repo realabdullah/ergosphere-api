@@ -4,6 +4,7 @@ import User from '../models/userModel.js';
 import Invite from '../models/inviteModel.js';
 import {workspaceInviteTemplate} from '../services/email/templates/invite.js';
 import {sendEmail} from '../services/email/email.js';
+import {sendInviteNotification, acceptInviteNotification} from '../services/pusher.js';
 
 const inviteUser = async (req, res) => {
     const {email, slug} = req.body;
@@ -35,9 +36,12 @@ const inviteUser = async (req, res) => {
         const invite = new Invite({token});
         await invite.save();
 
+        if (!isNewUser) {
+            sendInviteNotification(user._id, workspace.title, `${req.user.firstName} ${req.user.lastName}`, url);
+        }
+
         res.status(201).json({message: 'User invited successfully'});
     } catch (error) {
-        console.error(error);
         res.status(500).json({message: 'Server error'});
     }
 };
@@ -58,7 +62,10 @@ const acceptInvite = async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const {email, workspaceId, isNew} = decoded;
 
-        const workspace = await Workspace.findById(workspaceId);
+        const workspace = await Workspace.findOne({_id: workspaceId})
+            .populate('user', 'firstName lastName')
+            .populate('team', 'firstName lastName username profile_picture email');
+
         if (!workspace) {
             return res.status(404).json({message: 'Workspace not found'});
         }
@@ -69,11 +76,15 @@ const acceptInvite = async (req, res) => {
             await workspace.addUser(user._id);
             invite.used = true;
             await invite.save();
+
+            acceptInviteNotification(
+                workspace.user._id, workspace, user,
+            );
         }
 
         res.status(200).json({success: true, isNew});
     } catch (error) {
-        console.error(error);
+        console.log('error => ', error);
         res.status(401).json({message: 'Invalid token', success: false});
     }
 };
