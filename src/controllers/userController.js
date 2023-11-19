@@ -2,8 +2,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/userModel.js';
 import {createWorkspace} from './workspaceController.js';
-import {sendEmail} from '../services/email/email.js';
-import {welcomeTemplate} from '../services/email/templates/welcome.js';
+import {sendWelcomeNotification} from '../services/knock.js';
 
 
 export const register = async (req, res) => {
@@ -30,12 +29,7 @@ export const register = async (req, res) => {
         savedUser.workspace = workspace._id;
 
         // Send welcome email
-        const template = welcomeTemplate(name);
-        await sendEmail({
-            to: email,
-            subject: 'Welcome to Ergosphere! 🎉',
-            html: template,
-        });
+        await sendWelcomeNotification(savedUser);
         res.status(201).json({success: true, user: savedUser, accessToken: {
             token: access,
             expires: new Date(Date.now() + 60 * 60 * 1000),

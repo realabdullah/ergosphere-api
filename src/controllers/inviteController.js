@@ -2,9 +2,8 @@ import jwt from 'jsonwebtoken';
 import Workspace from '../models/workspaceModel.js';
 import User from '../models/userModel.js';
 import Invite from '../models/inviteModel.js';
-import {workspaceInviteTemplate} from '../services/email/templates/invite.js';
-import {sendEmail} from '../services/email/email.js';
-import {sendInviteNotification, acceptInviteNotification} from '../services/pusher.js';
+import {acceptInviteNotification} from '../services/pusher.js';
+import {sendInviteNotification as sendKnockInviteNotification} from '../services/knock.js';
 
 const inviteUser = async (req, res) => {
     const {email, slug} = req.body;
@@ -26,19 +25,10 @@ const inviteUser = async (req, res) => {
         const token = jwt.sign({email, workspaceId: workspace._id, isNew: isNewUser}, process.env.JWT_SECRET);
         const url = `${process.env.CLIENT_URL}/accept/${token}`;
 
-        const template = workspaceInviteTemplate(workspace.title, url, req.user.firstName);
-        await sendEmail({
-            to: email,
-            subject: 'You have been invited to a workspace',
-            html: template,
-        });
-
         const invite = new Invite({token});
         await invite.save();
 
-        if (!isNewUser) {
-            sendInviteNotification(user._id, workspace.title, `${req.user.firstName} ${req.user.lastName}`, url);
-        }
+        sendKnockInviteNotification(email, workspace.title, req.user, url);
 
         res.status(201).json({message: 'User invited successfully'});
     } catch (error) {
