@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
+import 'dotenv/config';
 
-mongoose.connect('mongodb://localhost:27017/ergosphere').then(() => {
+mongoose.connect(process.env.DATABASE_URL).then(() => {
     console.log('MongoDB connected');
 }).catch((err) => {
     console.log('MongoDB connection error', err);
