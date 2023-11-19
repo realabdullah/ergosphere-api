@@ -1,22 +1,19 @@
-/* eslint-disable require-jsdoc */
-import nodemailer from 'nodemailer';
+import {Resend} from 'resend';
 import 'dotenv/config';
+
+const resend = new Resend(process.env.RESEND_KEY);
 
 export const sendEmail = async ({to, subject, html}) => {
     try {
-        const transporter = nodemailer.createTransport({
-            host: process.env.ELASTIC_EMAIL_SERVER,
-            port: process.env.ELASTIC_EMAIL_PORT,
-            auth: {
-                user: process.env.ELASTIC_EMAIL_USERNAME,
-                pass: process.env.ELASTIC_EMAIL_PASSWORD,
-            },
+        const res = await resend.emails.send({
+            from: process.env.EMAIL_FROM,
+            to,
+            subject,
+            html,
         });
-
-        const info = await transporter.sendMail({from: process.env.EMAIL_FROM, to, subject, html});
-
-        console.log('Message sent: %s', info);
+        if (res.error) throw new Error(res.error);
+        console.log('Message sent: %s', res.data);
     } catch (error) {
-        console.error('Error: ', error);
+        console.error('Error sending mail: ', error);
     }
 };
