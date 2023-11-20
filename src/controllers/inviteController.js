@@ -28,7 +28,8 @@ const inviteUser = async (req, res) => {
         const invite = new Invite({token});
         await invite.save();
 
-        sendKnockInviteNotification(email, workspace.title, req.user, url);
+        const userInfo = {email, firstName: isNewUser ? '' : user.firstName};
+        sendKnockInviteNotification(userInfo, workspace.title, req.user, url);
 
         res.status(201).json({message: 'User invited successfully'});
     } catch (error) {

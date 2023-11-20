@@ -23,8 +23,9 @@ export const sendInviteNotification = async (user, workspace, sender, url) => {
         },
         recipients: [
             {
-                id: user,
-                email: user,
+                id: user.email,
+                email: user.email,
+                name: user?.firstName,
             },
         ],
         actor: {
