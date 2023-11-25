@@ -1,6 +1,7 @@
 /* eslint-disable require-jsdoc */
 
 import Workspace from '../models/workspaceModel.js';
+import User from '../models/userModel.js';
 
 export const getWorkspaces = async (req, res) => {
     try {
@@ -30,9 +31,22 @@ export const getWorkspace = async (req, res) => {
     }
 };
 
+const getUserIds = async (team) => {
+    const userIds = [];
+
+    for (const member of team) {
+        const user = await User.findOne({email: member.email});
+        if (user) userIds.push(user._id);
+    }
+
+    return userIds;
+};
+
 export const updateWorkspace = async (req, res) => {
     try {
         const payload = req.body;
+        const userIds = await getUserIds(payload.team);
+        payload.team = userIds;
         const workspace = await Workspace.findOneAndUpdate({
             user: req.user._id,
             slug: req.params.slug,
@@ -44,6 +58,7 @@ export const updateWorkspace = async (req, res) => {
         }
         res.json({success: true, workspace});
     } catch (error) {
+        console.log('sdfgf => ', error);
         res.status(500).json({error: error.message, success: false});
     }
 };
