@@ -1,5 +1,4 @@
 /* eslint-disable require-jsdoc */
-
 import Workspace from '../models/workspaceModel.js';
 import User from '../models/userModel.js';
 
@@ -47,6 +46,14 @@ export const updateWorkspace = async (req, res) => {
         const payload = req.body;
         const userIds = await getUserIds(payload.team);
         payload.team = userIds;
+
+        if (payload.slug !== req.params.slug) {
+            const slugExists = await checkIfSlugExists(payload.slug);
+            if (slugExists) {
+                return res.status(400).json({error: 'A workspace with this slug already exists', success: false});
+            }
+        }
+
         const workspace = await Workspace.findOneAndUpdate({
             user: req.user._id,
             slug: req.params.slug,
@@ -58,7 +65,6 @@ export const updateWorkspace = async (req, res) => {
         }
         res.json({success: true, workspace});
     } catch (error) {
-        console.log('sdfgf => ', error);
         res.status(500).json({error: error.message, success: false});
     }
 };
