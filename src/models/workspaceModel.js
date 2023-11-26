@@ -63,9 +63,12 @@ workspaceSchema.pre('save', async function(next) {
 
 
 workspaceSchema.post('save', async function(doc) {
-    if (this.isNew) {
-        const workspaceTeam = new WorkspaceTeam({user: doc.user, workspace: doc._id});
-        await workspaceTeam.save();
+    for (const userId of doc.team) {
+        const existingWorkspaceTeam = await WorkspaceTeam.findOne({user: userId, workspace: doc._id});
+        if (!existingWorkspaceTeam) {
+            const workspaceTeam = new WorkspaceTeam({user: userId, workspace: doc._id});
+            await workspaceTeam.save();
+        }
     }
 });
 
