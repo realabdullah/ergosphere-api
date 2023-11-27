@@ -163,3 +163,17 @@ export const editUser = async (req, res) => {
         res.status(500).json({error: 'User not found', success: false});
     }
 };
+
+export const updateProfilePicture = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({error: 'User not found'});
+        }
+        user.profile_picture = req.body.profile_picture;
+        await user.save();
+        res.json({success: true});
+    } catch (error) {
+        res.status(500).json({error: 'User not found', success: false});
+    }
+};
