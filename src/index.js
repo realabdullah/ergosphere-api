@@ -1,5 +1,6 @@
 import express from 'express';
 import bodyParser from 'body-parser';
+import auth from './routes/authRoutes.js';
 import user from './routes/userRoutes.js';
 import workspace from './routes/workspaceRoutes.js';
 import task from './routes/taskRoutes.js';
@@ -16,6 +17,7 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(cors());
 
+app.use('/auth', auth);
 app.use('/users', user);
 app.use('/workspaces', workspace);
 app.use('/tasks', task);

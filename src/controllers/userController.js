@@ -4,7 +4,6 @@ import User from '../models/userModel.js';
 import {createWorkspace} from './workspaceController.js';
 import {sendWelcomeNotification} from '../services/knock.js';
 
-
 export const register = async (req, res) => {
     try {
         if (!req.body.name || !req.body.email || !req.body.password) {
@@ -135,11 +134,11 @@ export const refresh = async (req, res) => {
 
 export const getUser = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
+        const user = await User.findOne({_id: req.user._id});
         if (!user) {
             return res.status(404).json({error: 'User not found'});
         }
-        res.json(user);
+        res.json({success: true, user});
     } catch (error) {
         res.status(500).json({error: 'User not found'});
     }

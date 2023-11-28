@@ -39,6 +39,10 @@ const UserSchema = new mongoose.Schema({
     token: String,
     resetPasswordToken: String,
     resetPasswordExpires: Date,
+    challenge: {
+        type: String,
+        default: '',
+    },
 });
 
 UserSchema.set('toJSON', {
@@ -46,6 +50,10 @@ UserSchema.set('toJSON', {
         delete ret.password;
         delete ret.token;
         delete ret.__v;
+        delete ret._id;
+        delete ret.resetPasswordToken;
+        delete ret.resetPasswordExpires;
+        delete ret.challenge;
         return ret;
     },
 });
