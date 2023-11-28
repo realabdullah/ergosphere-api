@@ -6,6 +6,7 @@ import {
 } from '@simplewebauthn/server';
 import {isoBase64URL} from '@simplewebauthn/server/helpers';
 import Authn from '../models/AuthnModel.js';
+import User from '../models/userModel.js';
 import 'dotenv/config';
 
 const rpName = process.env.RPNAME;
@@ -84,7 +85,7 @@ export const verifyAuthnResponse = async (req, res) => {
 
             const authn = {
                 device,
-                publicKey: base64PublicKey,
+                credentialPublicKey: base64PublicKey,
                 credentialID: base64CredentialID,
                 transports: registrationInfo.transports || ['internal'],
                 counter,
@@ -99,6 +100,103 @@ export const verifyAuthnResponse = async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({error: error.message, success: false});
+    }
+};
+
+export const requestLoginWithAuthn = async (req, res) => {
+    try {
+        const {email} = req.body;
+
+        const user = await User.findOne({email});
+        if (!user) {
+            return res.status(404).json({error: 'Email not found or no devices registered', success: false});
+        }
+
+        const savedAuthns = await Authn.find({user: user._id});
+        if (!savedAuthns || savedAuthns.length === 0) {
+            return res.status(404).json({error: 'Email not found or no devices registered', success: false});
+        }
+
+        const allowedCredentials = [];
+        for (const cred of savedAuthns) {
+            allowedCredentials.push({
+                id: isoBase64URL.toBuffer(cred.credentialID),
+                type: 'public-key',
+                transports: cred.transports || ['internal'],
+            });
+        }
+
+        const options = await generateAuthenticationOptions({
+            rpID: rpId,
+            timeout: 60000,
+            allowCredentials: allowedCredentials,
+            userVerification: 'required',
+        });
+
+        user.challenge = options.challenge;
+        await user.save();
+        res.json({success: true, options});
+    } catch (error) {
+        res.status(500).json({error: error.message, success: false});
+    }
+};
+
+export const loginWithAuthn = async (req, res) => {
+    try {
+        const {attResp, email} = req.body;
+
+        const user = await User.findOne({email});
+        if (!user) {
+            return res.status(404).json({error: 'Email not found or no devices registered', success: false});
+        }
+
+        const savedAuthns = await Authn.find({user: user._id});
+        if (!savedAuthns) {
+            return res.status(404).json({error: 'Email not found or no devices registered', success: false});
+        }
+
+        const verification = await verifyAuthenticationResponse({
+            response: attResp,
+            expectedChallenge: user.challenge,
+            expectedOrigin: rpOrigin,
+            expectedRPID: rpId,
+            authenticator: savedAuthns.filter((authn) => authn.credentialID === attResp.id).map((authn) => ({
+                credentialPublicKey: isoBase64URL.toBuffer(authn.credentialPublicKey),
+                credentialID: isoBase64URL.toBuffer(authn.credentialID),
+                counter: authn.counter,
+            }))[0],
+        });
+
+        const {verified, authenticationInfo} = verification;
+        if (verified && authenticationInfo) {
+            const {credentialID, newCounter} = authenticationInfo;
+            const base64CredentialID = isoBase64URL.fromBuffer(credentialID);
+            const existingDevice = savedAuthns ?
+                savedAuthns.find((authn) => authn.credentialID === base64CredentialID) :
+                false;
+
+            if (!existingDevice) {
+                return res.status(400).json({error: 'BEmail not found or no devices registered', success: false});
+            }
+
+            existingDevice.counter = newCounter;
+            await existingDevice.save();
+
+            const access = await user.generateAccessToken();
+            const refresh = await user.generateRefreshToken();
+
+            res.json({success: true, accessToken: {
+                token: access,
+                expires: new Date(Date.now() + 60 * 60 * 1000),
+            }, refreshToken: {
+                token: refresh,
+                expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            }});
+        } else {
+            res.status(400).json({error: 'Email not found or no devices registered', success: false});
+        }
+    } catch (error) {
+        res.status(500).json({error: 'An error occured while signing in.', success: false});
     }
 };
 

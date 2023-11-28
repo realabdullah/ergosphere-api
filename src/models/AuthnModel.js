@@ -10,7 +10,7 @@ const AuthnSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    publicKey: {
+    credentialPublicKey: {
         type: String,
         required: true,
     },
@@ -32,7 +32,7 @@ AuthnSchema.set('toJSON', {
     transform: function(doc, ret, options) {
         delete ret.__v;
         delete ret.credentialID;
-        delete ret.publicKey;
+        delete ret.credentialPublicKey;
         delete ret.counter;
         delete ret.transports;
         delete ret.user;
