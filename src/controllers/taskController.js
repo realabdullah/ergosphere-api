@@ -75,9 +75,13 @@ export const fetchWorkspaceTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
     try {
         const {slug, id} = req.params;
+        const user = req.user;
         const workspace = await Workspace.findOne({slug});
+        if (workspace.user.toString() !== user._id.toString()) {
+            throw new Error('You are not authorized to perform this action');
+        }
         const task = await Task.findOneAndDelete({
-            user: req.user._id,
+            user: user._id,
             _id: id,
             workspace: workspace._id,
         });
