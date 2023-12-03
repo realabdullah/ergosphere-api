@@ -9,7 +9,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 router.get('/get', authMiddleware, getUser);
-router.post('/edit:user', authMiddleware, editUser);
+router.post('/edit/:username', authMiddleware, editUser);
 router.post('/update-profile-picture', authMiddleware, updateProfilePicture);
 router.get('/add-authn', authMiddleware, generateRegistrationOptionsWithAuthn);
 router.post('/verify-authn', authMiddleware, verifyAuthnResponse);

@@ -151,11 +151,18 @@ export const editUser = async (req, res) => {
             return res.status(404).json({error: 'User not found'});
         }
 
-        const {name, password} = req.body;
+        const {username, name, password} = req.body;
+        if (username !== user.username) {
+            const usernameExists = await User.findOne({username});
+            if (usernameExists) {
+                return res.status(400).json({error: 'Username already exists'});
+            }
+        }
         if (password) user.password = password;
         const [firstName, lastName] = name.split(' ');
         user.firstName = firstName;
         user.lastName = lastName;
+        user.username = username;
         await user.save();
         res.json({success: true, user});
     } catch (error) {
