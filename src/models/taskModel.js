@@ -34,10 +34,6 @@ const taskSchema = new Schema({
         ref: 'User',
         required: true,
     },
-    assignees: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-    }],
     assignee: {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -48,7 +44,7 @@ const taskSchema = new Schema({
 taskSchema.set('toJSON', {
     transform: function(doc, ret, options) {
         delete ret.__v;
-        ret.assignee = ret.assignee.username;
+        ret.assignee = ret.assignee?.username ?? '';
         ret.workspace = ret.workspace.slug;
         ret.user = {
             username: ret.user.username,
