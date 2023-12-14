@@ -21,7 +21,7 @@ const taskSchema = new Schema({
     },
     status: {
         type: String,
-        enum: ['not started', 'in progress', 'completed'],
+        enum: ['not started', 'in progress', 'Completed'],
         default: 'not started',
     },
     workspace: {
@@ -38,13 +38,17 @@ const taskSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
     }],
+    assignee: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
     createdAt: Date,
 });
 
 taskSchema.set('toJSON', {
     transform: function(doc, ret, options) {
         delete ret.__v;
-        ret.assignees = ret.assignees.map((assignee) => (assignee.username));
+        ret.assignee = ret.assignee.username;
         ret.workspace = ret.workspace.slug;
         ret.user = {
             username: ret.user.username,

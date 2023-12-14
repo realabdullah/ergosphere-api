@@ -3,28 +3,28 @@ import Task from '../models/taskModel.js';
 import User from '../models/userModel.js';
 import Workspace from '../models/workspaceModel.js';
 
-const getAssignees = async (assignees) => {
-    const userQuery = {username: {$in: assignees}};
-    const users = await User.find(userQuery);
-    return users.map((user) => user._id);
+const getAssignee = async (assignee) => {
+    const userQuery = {username: assignee};
+    const user = await User.findOne(userQuery);
+    return user ? user._id : null;
 };
 
 export const addTask = async (req, res) => {
     try {
         const {slug} = req.params;
-        const assignees = await getAssignees(req.body.assignees);
+        const assignee = await getAssignee(req.body.assignee);
         const workspace = await Workspace.findOne({slug});
 
         const newTask = new Task({
             ...req.body,
             user: req.user._id,
             workspace: workspace._id,
-            assignees,
+            assignee,
         });
         const savedTask = await newTask.save();
 
         const populatedTask = await Task.findById(savedTask._id)
-            .populate('assignees', 'username')
+            .populate('assignee', 'username')
             .populate('user', 'firstName lastName username')
             .populate('workspace', 'slug');
         res.status(201).json({success: true, task: populatedTask});
@@ -37,14 +37,14 @@ export const addTask = async (req, res) => {
 export const updateTask = async (req, res) => {
     try {
         const {slug, id} = req.params;
-        req.body.assignees = await getAssignees(req.body.assignees);
+        req.body.assignee = await getAssignee(req.body.assignee);
         const workspace = await Workspace.findOne({slug});
         const task = await Task.findOneAndUpdate({
             user: req.user._id,
             _id: id,
             workspace: workspace._id,
         }, req.body, {new: true})
-            .populate('assignees', 'username')
+            .populate('assignee', 'username')
             .populate('user', 'firstName lastName username')
             .populate('workspace', 'slug');
         if (!task) throw new Error('Task not found');
@@ -62,7 +62,7 @@ export const fetchWorkspaceTask = async (req, res) => {
             user: req.user._id,
             _id: id,
             workspace: workspace._id,
-        }).populate('assignees', 'username')
+        }).populate('assignee', 'username')
             .populate('user', 'firstName lastName username')
             .populate('workspace', 'slug');
         if (!task) throw new Error('Task not found');
@@ -98,7 +98,7 @@ export const fetchWorkspaceTasks = async (req, res) => {
         const workspace = await Workspace.findOne({slug});
         const tasks = await Task.find({
             workspace: workspace._id,
-        }).populate('assignees', 'username')
+        }).populate('assignee', 'username')
             .populate('user', 'firstName lastName username')
             .populate('workspace', 'slug');
         res.json({success: true, tasks});
