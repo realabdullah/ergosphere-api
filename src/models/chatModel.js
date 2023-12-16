@@ -14,6 +14,15 @@ const ChatSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
+    createdAt: Date,
+});
+
+ChatSchema.pre('save', async function(next) {
+    if (this.isNew) {
+        this.createdAt = new Date();
+    }
+
+    next();
 });
 
 const Chat = mongoose.model('Chat', ChatSchema);
