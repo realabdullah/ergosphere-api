@@ -1,7 +1,7 @@
 /* eslint-disable no-invalid-this */
 import mongoose from 'mongoose';
 
-const ChatSchema = new mongoose.Schema({
+const CommentSchema = new mongoose.Schema({
     message: {
         type: String,
         require: true,
@@ -17,7 +17,7 @@ const ChatSchema = new mongoose.Schema({
     createdAt: Date,
 });
 
-ChatSchema.pre('save', async function(next) {
+CommentSchema.pre('save', async function(next) {
     if (this.isNew) {
         this.createdAt = new Date();
     }
@@ -25,6 +25,6 @@ ChatSchema.pre('save', async function(next) {
     next();
 });
 
-const Chat = mongoose.model('Chat', ChatSchema);
+const Comment = mongoose.model('Comment', CommentSchema);
 
-export default Chat;
+export default Comment;
