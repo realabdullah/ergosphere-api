@@ -26,23 +26,13 @@ const UserSchema = new mongoose.Schema({
         unique: true,
         index: true,
     },
-    username: {
-        type: String,
-        unique: true,
-        index: true,
-    },
+    username: {type: String, unique: true, index: true},
     profile_picture: String,
-    password: {
-        type: String,
-        required: true,
-    },
+    password: {type: String, required: true},
     token: String,
     resetPasswordToken: String,
     resetPasswordExpires: Date,
-    challenge: {
-        type: String,
-        default: '',
-    },
+    challenge: {type: String, default: ''},
 });
 
 UserSchema.set('toJSON', {
