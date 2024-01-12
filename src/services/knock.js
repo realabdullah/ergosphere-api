@@ -3,35 +3,13 @@ import 'dotenv/config';
 
 const knock = new Knock(process.env.KNOCK_API_KEY);
 
-export const sendWelcomeNotification = async (user) => {
-    await knock.workflows.trigger('account-creation', {
+export const sendWaitlistConfirmation = async (email) => {
+    await knock.workflows.trigger('waitlist-confirmation', {
         recipients: [
             {
-                id: user.username,
-                email: user.email,
-                name: user.firstName,
+                id: email,
+                email,
             },
         ],
-    });
-};
-
-export const sendInviteNotification = async (user, workspace, sender, url) => {
-    await knock.workflows.trigger('workspace-invitation', {
-        data: {
-            workspace,
-            url,
-        },
-        recipients: [
-            {
-                id: user.email,
-                email: user.email,
-                name: user?.firstName,
-            },
-        ],
-        actor: {
-            id: sender.username,
-            name: sender.firstName,
-            email: sender.email,
-        },
     });
 };

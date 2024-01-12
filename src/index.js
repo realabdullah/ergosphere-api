@@ -1,14 +1,10 @@
 /* eslint-disable require-jsdoc */
 import express from 'express';
 import bodyParser from 'body-parser';
-import auth from './routes/authRoutes.js';
-import user from './routes/userRoutes.js';
-import workspace from './routes/workspaceRoutes.js';
-import task from './routes/taskRoutes.js';
-import team from './routes/teamRoutes.js';
-import invite from './routes/inviteRoutes.js';
+import Waitlist from './models/waitlistModel.js';
 import cors from 'cors';
 import 'dotenv/config';
+import {sendWaitlistConfirmation} from './services/knock.js';
 // eslint-disable-next-line no-unused-vars
 import mongoose from './db.js';
 
@@ -18,11 +14,23 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(cors());
 
-app.use('/auth', auth);
-app.use('/users', user);
-app.use('/workspaces', workspace);
-app.use('/tasks', task);
-app.use('/teams', team);
-app.use('/invite', invite);
+app.post('/waitlist', async (req, res) => {
+    try {
+        const {email} = req.body;
+
+        const existingEntry = await Waitlist.findOne({email});
+        if (existingEntry) {
+            return res.status(400).json({error: 'Email already on the waitlist.'});
+        }
+
+        const waitlistEntry = new Waitlist({email});
+        await waitlistEntry.save();
+
+        await sendWaitlistConfirmation(email);
+        res.json({message: 'Added to waitlist successfully'});
+    } catch (error) {
+        res.status(500).json({error: 'Internal Server Error'});
+    }
+});
 
 app.listen(port, () => console.log(`Server is running on port ${port}`));
